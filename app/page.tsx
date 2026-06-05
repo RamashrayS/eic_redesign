@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
-  // Video handoff state
-  const [introEnded, setIntroEnded] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const introVideoRef = useRef<HTMLVideoElement>(null);
   const idleVideoRef = useRef<HTMLVideoElement>(null);
 
   // Parallax & Tilt Refs
@@ -84,44 +81,18 @@ export default function Home() {
   }, [startTyping]);
 
   useEffect(() => {
-    // Seamless Video Handoff
-    const intro = introVideoRef.current;
     const idle = idleVideoRef.current;
+    if (!idle) return;
 
-    if (!intro || !idle) return;
-
-    // Preload both videos
-    intro.load();
     idle.load();
-
-    const handleEnded = () => {
-      idle.play()
-        .then(() => {
-          setIntroEnded(true);
-        })
-        .catch((err) => {
-          console.error("Idle video failed to play:", err);
-          // Fallback: show idle video container anyway
-          setIntroEnded(true);
-        });
-    };
-
-    intro.addEventListener("ended", handleEnded);
-
-    // If autoplay is blocked, we fallback to user interaction or show play overlays,
-    // but with muted files it should start automatically.
-    intro.play().catch((err) => {
+    idle.play().catch((err) => {
       console.warn("Autoplay was prevented. Retrying on first user click...", err);
       const startAutoplay = () => {
-        intro.play().catch(e => console.log(e));
+        idle.play().catch(e => console.log(e));
         document.removeEventListener("click", startAutoplay);
       };
       document.addEventListener("click", startAutoplay);
     });
-
-    return () => {
-      intro.removeEventListener("ended", handleEnded);
-    };
   }, []);
 
   useEffect(() => {
@@ -338,25 +309,13 @@ export default function Home() {
             style={{ filter: "drop-shadow(0px 20px 30px rgba(0, 0, 0, 0.7))" }}
           >
 
-            {/* Intro Video (Plays once) */}
-            <video
-              ref={introVideoRef}
-              id="mascot-intro"
-              className={`absolute w-full h-full object-contain transition-opacity duration-500 ease-in-out ${introEnded ? "opacity-0 pointer-events-none" : "opacity-100"
-                }`}
-              src="/assets/intro.webm"
-              autoPlay
-              muted
-              playsInline
-            />
-
-            {/* Idle Video (Loops, starts hidden, fades in) */}
+            {/* Idle Video (Loops) */}
             <video
               ref={idleVideoRef}
               id="mascot-idle"
-              className={`absolute w-full h-full object-contain transition-opacity duration-500 ease-in-out ${introEnded ? "opacity-100" : "opacity-0 pointer-events-none"
-                }`}
+              className="absolute w-full h-full object-contain"
               src="/assets/idle.webm"
+              autoPlay
               muted
               loop
               playsInline
